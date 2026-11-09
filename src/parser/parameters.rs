@@ -18,8 +18,8 @@ impl Parameters {
     where I: Iterator<Item = String> {
         let mut ports: Vec<u16> = Vec::new();
         let mut ip: Vec<IpAddr> = Vec::new();
-        let mut speedup: u16 = 0;
-        let mut scan: TypeScan = TypeScan::NULL;
+        let mut speedup: u16 = 1;
+        let mut scan: TypeScan = TypeScan::SYN;
 
         while let Some(arg) = args.next() {
             match arg.as_str() {
@@ -28,55 +28,53 @@ impl Parameters {
                     std::process::exit(0);
                 }
                 "--ports" => {
-                    if let Some(value) = args.next() {
                         let value = args.next().ok_or_else(|| "Option --ports attend une liste de ports en paramètre.".to_string())?;
                         let parsed_ports = Self::setup_ports(&value)?;
                         ports.extend(parsed_ports);
-                    }
                 }
                 "--ip" => {
                     if ip.is_empty() == false {
                        return Err("--ip is already set".to_string())
                     }
-                    if let Some(value) = args.next() {
-                        let value = args.next().ok_or_else(|| "Option --ip attend une IP".to_string())?;
-                        let parsed_ip = Self::setup_ip(&value)?;
-                        ip.push(parsed_ip);
-                    }
+                    let value = args.next().ok_or_else(|| "Option --ip attend une IP".to_string())?;
+                    let parsed_ip = Self::setup_ip(&value)?;
+                    ip.push(parsed_ip);
+                    println!("{}", parsed_ip);
                 }
                 "--file" => {
                     if ip.is_empty() == false {
                         return Err("--ip is already set".to_string())
                     }
-
-                    if let Some(value) = args.next() {
-                        let value = args.next().ok_or_else(|| "Option --scan attend une de ces valeurs".to_string())?;
-                        let parsed_file = Self::setup_ip_in_file(&value)?;
-                        ip.extend(parsed_file);
-                    }
-
+                    let value = args.next().ok_or_else(|| "Option --scan attend une de ces valeurs".to_string())?;
+                    let parsed_file = Self::setup_ip_in_file(&value)?;
+                    ip.extend(parsed_file);
                 }
                 "--speedup" => {
-                    if let Some(value) = args.next() {
-                        let value = args.next().ok_or_else(|| "Option --speedup attend un argument".to_string())?;
-                        let parsed_speedup = Self::setup_speedup(&value)?;
-                        speedup = parsed_speedup;
-                    }
+                    let value = args.next().ok_or_else(|| "Option --speedup attend un argument".to_string())?;
+                    let parsed_speedup = Self::setup_speedup(&value)?;
+                    speedup = parsed_speedup;
                 }
                 "--scan" => {
-                    if let Some(value) = args.next() {
-                        let value = args.next().ok_or_else(|| "Option --scan attend une de ces valeurs".to_string())?;
-                        let parsed_scan = Self::setup_scan(&value)?;
-                        scan = parsed_scan;
-                    }
+                    let value = args.next().ok_or_else(|| "Option --scan attend une de ces valeurs".to_string())?;
+                    let parsed_scan = Self::setup_scan(&value)?;
+                    scan = parsed_scan;
                 }
                 _ => {
                     return Err(format!("Incorrect argument: {}", arg))
                 }
             }
         }
+
+        if ip.is_empty() {
+            return Err("No ip specified".to_string());
+        }
+        if ports.is_empty() {
+            ports.extend(1..=1024)
+        } else {
         ports.sort();
         ports.dedup();
+        }
+
         Ok(Parameters { ports, ip, speedup, scan })
     }
 
@@ -138,7 +136,6 @@ impl Parameters {
     }
     
     fn print_helper() {
-        println!("Helper")
+        println!("Usage: [--help] [--ports [Numbers/ranged]] [--ip IP_ADDRESS | --file FILE] [--speedup] [--scan [type]]");
     }
-
 }
